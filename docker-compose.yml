@@ -1,0 +1,36 @@
+
+services:
+  db:
+    image: postgres:16
+    container_name: nihongo_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nihongo
+      POSTGRES_PASSWORD: nihongo_dev_password
+      POSTGRES_DB: nihongo
+    ports:
+      - "5432:5432"
+    volumes:
+      - nihongo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nihongo -d nihongo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: nihongo_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.dev
+      PGADMIN_DEFAULT_PASSWORD:   
+    ports:
+      - "5050:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  nihongo_pgdata:
+ 
