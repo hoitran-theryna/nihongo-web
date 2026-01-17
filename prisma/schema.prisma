@@ -20,3 +20,19 @@ model Vocab {
   meaningVi String
   createdAt DateTime @default(now())
 }
+enum Role {
+  STUDENT
+  EDITOR
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  role         Role     @default(STUDENT)
+  passwordHash String
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

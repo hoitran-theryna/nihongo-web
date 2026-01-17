@@ -1,28 +1,25 @@
 import { prisma } from "@/lib/prisma";
-
-type Params = { id: string } | Promise<{ id: string }>;
-
-function getId(params: Params) {
-  // Hỗ trợ cả trường hợp params là object hoặc Promise (tùy version)
-  return params instanceof Promise ? params.then((p: { id: string }) => p.id) : params.id;
-}
+import { requireEditorOrAdmin } from "@/lib/requireRole";
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: Params }
+  { params }: { params: { id: string } }
 ) {
-  const id = await getId(params);
+  const guard = await requireEditorOrAdmin();
+  if (!guard.ok) return Response.json({ error: "Unauthorized" }, { status: guard.status });
 
-  if (!id) {
-    return Response.json({ error: "Missing id" }, { status: 400 });
+  const id = params?.id;
+
+  // ✅ Chặn trường hợp id rỗng/undefined
+  if (!id || typeof id !== "string" || id.trim() === "" || id === "undefined") {
+    return Response.json({ error: "Invalid id" }, { status: 400 });
   }
 
-  // deleteMany không throw nếu không tìm thấy (dễ debug hơn)
-  const result = await prisma.vocab.deleteMany({ where: { id } });
-
-  if (result.count === 0) {
+  try {
+    await prisma.vocab.delete({ where: { id } });
+    return Response.json({ ok: true });
+  } catch (e: unknown) {
+    // Không tìm thấy -> 404
     return Response.json({ error: "Not found" }, { status: 404 });
   }
-
-  return Response.json({ ok: true });
 }
